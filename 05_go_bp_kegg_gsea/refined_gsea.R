@@ -5,13 +5,17 @@
 library(clusterProfiler)
 library(org.Hs.eg.db)
 
-# FIX: Explicitly define project directory to avoid missing object errors
-project_dir <- "results/gsea" 
+# Define base output directory
+project_dir <- "results/gsea"
 
 set.seed(20261021)
 
-gsea_refined <- function(gene_list, label) {
+# FIX: Explicitly load your pre-ranked gene RDS files into memory
+# Adjust the file paths inside readRDS() if they are stored in a different folder
+rank_AD_Old <- readRDS("results/gsea/ranked_genes_AD_vs_Old.rds")
+rank_Old_Young <- readRDS("results/gsea/ranked_genes_Old_vs_Young.rds")
 
+gsea_refined <- function(gene_list, label) {
   cat("\nProcessing:", label, "\n")
 
   go <- gseGO(
@@ -23,7 +27,7 @@ gsea_refined <- function(gene_list, label) {
     maxGSSize = 500,
     pAdjustMethod = "BH",
     pvalueCutoff = 1,
-    eps = 0,             # Excellent choice for p-value resolution
+    eps = 0,
     by = "fgsea",
     verbose = FALSE
   )
@@ -36,20 +40,18 @@ gsea_refined <- function(gene_list, label) {
     maxGSSize = 500,
     pAdjustMethod = "BH",
     pvalueCutoff = 1,
-    eps = 0,             # Excellent choice for p-value resolution
+    eps = 0,
     by = "fgsea",
     verbose = FALSE
   )
 
   # Print significant pathways from both ends of the ranking
   show_direction <- function(result, database) {
-
     x <- as.data.frame(result)
 
     cat("\n", database, ":", label, "\n", sep = "")
 
     for (direction in c("Positive NES", "Negative NES")) {
-
       if (direction == "Positive NES") {
         z <- x[!is.na(x$NES) & x$NES > 0 & x$p.adjust < 0.05, , drop = FALSE]
       } else {
@@ -63,9 +65,12 @@ gsea_refined <- function(gene_list, label) {
       if (nrow(z) == 0) {
         cat("No significant pathways in this direction.\n")
       } else {
-        cols := intersect(
-          c("ID", "Description", "setSize",
-            "NES", "pvalue", "p.adjust"),
+        # FIX: Changed ':=' to standard R assignment '<-'
+        cols <- intersect(
+          c(
+            "ID", "Description", "setSize",
+            "NES", "pvalue", "p.adjust"
+          ),
           names(z)
         )
 
@@ -80,7 +85,7 @@ gsea_refined <- function(gene_list, label) {
   list(GO_BP = go, KEGG = kegg)
 }
 
-# Run the functions (assumes rank_AD_Old and rank_Old_Young exist in memory)
+# Run the functions safely now that objects are loaded
 gsea_AD_Old_refined <- gsea_refined(
   rank_AD_Old,
   "AD_vs_Old"
@@ -91,18 +96,15 @@ gsea_Old_Young_refined <- gsea_refined(
   "Old_vs_Young"
 )
 
-# Ensure the target directory exists before saving
-dir.create(file.path(project_dir, "results"), showWarnings = FALSE, recursive = TRUE)
+# FIX: Removed the nested "results" append so it cleanly writes into "results/gsea/"
+dir.create(project_dir, showWarnings = FALSE, recursive = TRUE)
 
 saveRDS(
   list(
     AD_vs_Old = gsea_AD_Old_refined,
     Old_vs_Young = gsea_Old_Young_refined
   ),
-  file.path(
-    project_dir, "results",
-    "GSEA_refined_eps0.rds"
-  )
+  file.path(project_dir, "GSEA_refined_eps0.rds")
 )
 
 cat("\nRefined GSEA finished.\n")
