@@ -1,0 +1,4 @@
+"ID","Description","NES","pvalue","p.adjust"
+"GO:0097529","myeloid leukocyte migration",-2.78884576370904,1e-10,2.90874316939891e-09
+"GO:0043062","extracellular structure organization",-2.63845107428827,1e-10,2.90874316939891e-09
+"GO:0099504","synaptic vesicle cycle",2.35277335903152,1e-10,2.90874316939891e-09
